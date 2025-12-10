@@ -10,5 +10,7 @@ def open_image(path):
     except FileNotFoundError:
         return FileNotFoundError
     
-    
+def save_image(path):
+    global image
+    image.save(path)
 

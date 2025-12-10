@@ -1,31 +1,32 @@
 import os
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from PIL import ImageTk, Image
 import image_processing
 
 MAX_RENDER_SIZE = (600, 600)
-MIN_RENDER_SIZE = (300, 300)
 
 def resize(image):
     w, h = image.size
     resized_image = image
+    ratio = 0
+    status = 1
 
-    if h >= MAX_RENDER_SIZE[1]:
-        ratio = h / MAX_RENDER_SIZE[1]
-        resized_image = image.resize((int(w/ratio), MAX_RENDER_SIZE[1]))
-    elif h <= MIN_RENDER_SIZE[1]:
-        ratio = h / MIN_RENDER_SIZE[1]
-        resized_image = image.resize((int(w/ratio), MIN_RENDER_SIZE[1]))
+    try:
+        if h > MAX_RENDER_SIZE[1]:
+            ratio = h / MAX_RENDER_SIZE[1]
+            resized_image = image.resize((int(w/ratio), MAX_RENDER_SIZE[1]))
 
-    if w >= MAX_RENDER_SIZE[0]:
-        ratio = w / MAX_RENDER_SIZE[0]
-        resized_image = image.resize((MAX_RENDER_SIZE[0], int(h/ratio)))
-    elif w <= MIN_RENDER_SIZE[0]:
-        ratio = w / MIN_RENDER_SIZE[0]
-        resized_image = image.resize((MIN_RENDER_SIZE[0]), int(h/ratio))
+        if w > MAX_RENDER_SIZE[0]:
+            ratio = w / MAX_RENDER_SIZE[0]
+            resized_image = image.resize((MAX_RENDER_SIZE[0], int(h/ratio)))
+    except:
+        resized_image = None
 
-    return resized_image
+    if ratio != 0:
+        status = messagebox.askokcancel("Modificare imagine", "Imaginea este prea mare. Va fi rescalata de editor.", type='okcancel')
+
+    return (status, resized_image)
 
 def file_select():
     global filepath
@@ -46,7 +47,17 @@ def file_select():
         return
     
     image_processing.open_image(path)
-    image_processing.image = resize(image_processing.image)
+    print(image_processing.image.size)
+    status, aux = resize(image_processing.image)
+
+    if aux is None:
+        img_data.config(text="Nu se poate rescala imagea.")
+        return
+    elif status == 0:
+        return
+    elif status == 1:
+        image_processing.image = aux
+
     image_tk = ImageTk.PhotoImage(image_processing.image)
 
     filepath.config(text=path)
@@ -62,6 +73,27 @@ def file_select():
 
     img_data.config(text=str(image_processing.image.size) + " - " + str(image_processing.image.mode))
 
+def file_save():
+    global filepath
+
+    ext_map = {
+        ".png": ("PNG Image", "*.png"),
+        ".jpg": ("JPEG Image", "*.jpg *.jpeg"),
+        ".jpeg": ("JPEG Image", "*.jpg *.jpeg"),
+        ".bmp": ("BMP Image", "*.bmp"),
+    }
+
+    _, ext = os.path.splitext(filepath.cget("text"))
+
+    path = filedialog.asksaveasfilename(filetypes=[ext_map[ext]])
+
+    if len(path) == 0:
+        return
+
+    print(path + ext)
+
+    image_processing.save_image(path)
+
 window = tk.Tk()
 window.title("Editor de imagini")
 window.resizable(False, False)
@@ -73,7 +105,7 @@ top_bar.pack(anchor="nw", fill="x")
 select_button = tk.Button(top_bar, text="Selectare",foreground="white", background="#1E4E78", highlightthickness=0, command=file_select)
 select_button.pack(anchor="nw", side="left", pady=10)
 
-save_button = tk.Button(top_bar, text="Salvare", foreground="white", background="#1E4E78", highlightthickness=0)
+save_button = tk.Button(top_bar, text="Salvare", foreground="white", background="#1E4E78", highlightthickness=0, command=file_save)
 save_button.pack(anchor="nw", side="left", pady=10)
 
 image_area = tk.Frame(window, background="white")
