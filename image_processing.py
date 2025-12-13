@@ -14,3 +14,6 @@ def save_image(path):
     global image
     image.save(path)
 
+def img_greyscale():
+    global image
+    image = image.convert("L")

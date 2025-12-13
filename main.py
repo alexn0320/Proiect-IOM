@@ -1,8 +1,9 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PIL import ImageTk, Image
+from PIL import ImageTk, Image, ImageOps
 import image_processing
+import tkinter.font as tkFont
 
 MAX_RENDER_SIZE = (600, 600)
 
@@ -28,9 +29,15 @@ def resize(image):
 
     return (status, resized_image)
 
+def render(image_tk):
+    global canvas
+    
+    canvas.delete("all")
+    canvas.create_rectangle(2, 2, MAX_RENDER_SIZE[0], MAX_RENDER_SIZE[1], outline="black")
+    canvas.create_image(MAX_RENDER_SIZE[0] // 2, MAX_RENDER_SIZE[1] // 2, image=image_tk, anchor="center")
+
 def file_select():
     global filepath
-    global canvas
     global img_data
     global image_tk
 
@@ -61,17 +68,19 @@ def file_select():
     image_tk = ImageTk.PhotoImage(image_processing.image)
 
     filepath.config(text=path)
-
-    canvas.delete("all")
-    canvas.create_rectangle(1, 1, MAX_RENDER_SIZE[0] - 1, MAX_RENDER_SIZE[1] - 1, outline="black")
-    canvas.create_image(
-        MAX_RENDER_SIZE[0] // 2,
-        MAX_RENDER_SIZE[1] // 2,
-        image=image_tk,
-        anchor="center"
-    )
+    
+    render(image_tk)
 
     img_data.config(text=str(image_processing.image.size) + " - " + str(image_processing.image.mode))
+
+def processing(type):
+    global image_tk
+
+    if type == 1:
+        image_processing.img_greyscale()
+
+    image_tk = ImageTk.PhotoImage(image_processing.image)
+    render(image_tk)
 
 def file_save():
     global filepath
@@ -90,8 +99,6 @@ def file_save():
     if len(path) == 0:
         return
 
-    print(path + ext)
-
     image_processing.save_image(path)
 
 window = tk.Tk()
@@ -99,26 +106,36 @@ window.title("Editor de imagini")
 window.resizable(False, False)
 image_tk = None
 
+ui_font = tkFont.Font(family="Verdana", size=12)
+button_font = tkFont.Font(family="Verdana", size=10)
+
 top_bar = tk.Frame(window, background="#286CA1")
 top_bar.pack(anchor="nw", fill="x")
 
-select_button = tk.Button(top_bar, text="Selectare",foreground="white", background="#1E4E78", highlightthickness=0, command=file_select)
+select_button = tk.Button(top_bar, text="Selectare",foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=file_select)
 select_button.pack(anchor="nw", side="left", pady=10)
 
-save_button = tk.Button(top_bar, text="Salvare", foreground="white", background="#1E4E78", highlightthickness=0, command=file_save)
+save_button = tk.Button(top_bar, text="Salvare", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=file_save)
 save_button.pack(anchor="nw", side="left", pady=10)
 
-image_area = tk.Frame(window, background="white")
-image_area.pack(anchor="center")
+left_bar = tk.Frame(window, background="#286CA1")
+left_bar.pack(side="left", fill="y")
 
-filepath = tk.Label(image_area, font="bold", background="white", text="Selectati o image.")
+image_area = tk.Frame(window, background="white")
+image_area.pack(side="left", expand="True")
+
+filepath = tk.Label(image_area, font=ui_font, background="white", text="Selectati o image.")
 filepath.pack(side="top")
 
-canvas = tk.Canvas(image_area, width=MAX_RENDER_SIZE[0], height=MAX_RENDER_SIZE[1], background="white")
-canvas.create_rectangle(1, 1, MAX_RENDER_SIZE[0] - 1, MAX_RENDER_SIZE[1] - 1, outline="black")
+canvas = tk.Canvas(image_area, width=MAX_RENDER_SIZE[0]+2, height=MAX_RENDER_SIZE[1]+2, background="white")
+canvas.create_rectangle(2, 2, MAX_RENDER_SIZE[0]+1, MAX_RENDER_SIZE[1]+1, outline="black")
 canvas.pack(anchor="center")
 
-img_data = tk.Label(image_area, text="", font="bold", background="white")
+img_data = tk.Label(image_area, text="", font=ui_font, background="white")
 img_data.pack(side="top")
+
+#butoanele de prelucrare
+grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing(1))
+grey_button.pack(anchor="w", side="top", padx=10, pady=10)
 
 window.mainloop()
