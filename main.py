@@ -1,7 +1,7 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
-from PIL import ImageTk, Image, ImageOps
+from PIL import ImageTk, Image, ImageOps, ImageEnhance
 import image_processing
 import tkinter.font as tkFont
 
@@ -86,6 +86,20 @@ def processing(type):
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
+def img_contrast(contrast_var):
+    global image_tk
+    
+    if getattr(image_processing, 'image', None) is None:
+        return
+
+    valoare = float(contrast_var)
+    
+    enhancer = ImageEnhance.Contrast(image_processing.image)
+    image_en = enhancer.enhance(valoare)
+
+    image_tk = ImageTk.PhotoImage(image_en)
+    render(image_tk)
+
 def file_save():
     global filepath
 
@@ -113,39 +127,51 @@ image_tk = None
 ui_font = tkFont.Font(family="Verdana", size=12)
 button_font = tkFont.Font(family="Verdana", size=10)
 
-top_bar = tk.Frame(window, background="#286CA1")
+top_bar = tk.Frame(window, bg="#286CA1")
 top_bar.pack(anchor="nw", fill="x")
 
-select_button = tk.Button(top_bar, text="Selectare",foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=file_select)
+select_button = tk.Button(top_bar, text="Selectare",foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                          command=file_select)
 select_button.pack(anchor="nw", side="left", pady=10)
 
-save_button = tk.Button(top_bar, text="Salvare", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=file_save)
+save_button = tk.Button(top_bar, text="Salvare", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                        command=file_save)
 save_button.pack(anchor="nw", side="left", pady=10)
 
-left_bar = tk.Frame(window, background="#286CA1")
+left_bar = tk.Frame(window, bg="#286CA1")
 left_bar.pack(side="left", fill="y")
 
-image_area = tk.Frame(window, background="white")
+image_area = tk.Frame(window, bg="white")
 image_area.pack(side="left", expand="True")
 
 filepath = tk.Label(image_area, font=ui_font, background="white", text="Selectati o image.")
 filepath.pack(side="top")
 
-canvas = tk.Canvas(image_area, width=MAX_RENDER_SIZE[0]+2, height=MAX_RENDER_SIZE[1]+2, background="white")
+canvas = tk.Canvas(image_area, width=MAX_RENDER_SIZE[0]+2, height=MAX_RENDER_SIZE[1]+2, bg="white")
 canvas.create_rectangle(2, 2, MAX_RENDER_SIZE[0]+1, MAX_RENDER_SIZE[1]+1, outline="black")
 canvas.pack(anchor="center")
 
-img_data = tk.Label(image_area, text="", font=ui_font, background="white")
+img_data = tk.Label(image_area, text="", font=ui_font, bg="white")
 img_data.pack(side="top")
 
 #butoanele de prelucrare
-grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('greyscale'))
+grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                        command=lambda: processing('greyscale'))
 grey_button.pack(anchor="n", side="top", padx=10, pady=10)
 
-blur_button = tk.Button(left_bar, text="Blur", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('blur'))
+blur_button = tk.Button(left_bar, text="Blur", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                        command=lambda: processing('blur'))
 blur_button.pack(anchor="n", side="top", padx=10, pady=10)
 
-emboss_button = tk.Button(left_bar, text="Emboss", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('emboss'))
+emboss_button = tk.Button(left_bar, text="Emboss", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                          command=lambda: processing('emboss'))
 emboss_button.pack(anchor="n", side="top", padx=10, pady=10)
+
+#slideuri de prelucrare
+contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
+                           foreground="white", font=button_font, bg="#1E4E78",
+                           command=img_contrast)
+contrast_slider.set(1)
+contrast_slider.pack(anchor="n", side="top", padx=10, pady=10)
 
 window.mainloop()
