@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageTk, ImageEnhance, ImageFilter
 
 image = None
 
@@ -17,3 +17,11 @@ def save_image(path):
 def img_greyscale():
     global image
     image = image.convert("L")
+
+def img_blur():
+    global image
+    image = image.filter(ImageFilter.BLUR)
+
+def img_emboss():
+    global image
+    image = image.filter(ImageFilter.EMBOSS)

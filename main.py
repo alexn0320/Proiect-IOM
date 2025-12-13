@@ -75,9 +75,13 @@ def file_select():
 
 def processing(type):
     global image_tk
-
-    if type == 1:
+    
+    if type == 'greyscale':
         image_processing.img_greyscale()
+    if type == 'blur':
+        image_processing.img_blur()
+    if type == 'emboss':
+        image_processing.img_emboss()
 
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
@@ -135,7 +139,13 @@ img_data = tk.Label(image_area, text="", font=ui_font, background="white")
 img_data.pack(side="top")
 
 #butoanele de prelucrare
-grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing(1))
-grey_button.pack(anchor="w", side="top", padx=10, pady=10)
+grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('greyscale'))
+grey_button.pack(anchor="n", side="top", padx=10, pady=10)
+
+blur_button = tk.Button(left_bar, text="Blur", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('blur'))
+blur_button.pack(anchor="n", side="top", padx=10, pady=10)
+
+emboss_button = tk.Button(left_bar, text="Emboss", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('emboss'))
+emboss_button.pack(anchor="n", side="top", padx=10, pady=10)
 
 window.mainloop()
