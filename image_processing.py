@@ -27,6 +27,7 @@ def img_emboss():
     global image
     image = image.filter(ImageFilter.EMBOSS)
 
+
 def img_search_similarity(img1, img2):
     size = (256, 256)
     aux_img1 = np.array(img1.convert("L").resize(size))
