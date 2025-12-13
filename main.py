@@ -4,6 +4,8 @@ from tkinter import filedialog, messagebox
 from PIL import ImageTk, Image, ImageOps
 import image_processing
 import tkinter.font as tkFont
+import sys
+import webbrowser
 
 MAX_RENDER_SIZE = (600, 600)
 
@@ -86,6 +88,33 @@ def processing(type):
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
+def image_search(org_image_path):
+    path = filedialog.askdirectory()
+
+    print(org_image_path)
+
+    if len(path) == 0:
+        return
+    
+    images = []
+    for f in os.listdir(path):
+        if f.lower().endswith((".png", ".jpg", ".jpeg")) and org_image_path != f:
+            images.append(os.path.join(path, f))
+
+    close_image = None
+    min = sys.maxsize
+
+    for img in images:
+        aux_image = Image.open(img)
+        dif = image_processing.img_search_similarity(image_processing.image.copy(), aux_image.copy())
+
+        if min > dif:
+            min = dif
+            close_image = img
+
+    if close_image != None:
+        os.system(close_image)
+
 def file_save():
     global filepath
 
@@ -147,5 +176,8 @@ blur_button.pack(anchor="n", side="top", padx=10, pady=10)
 
 emboss_button = tk.Button(left_bar, text="Emboss", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: processing('emboss'))
 emboss_button.pack(anchor="n", side="top", padx=10, pady=10)
+
+img_search_button = tk.Button(left_bar, text="Image Search", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: image_search(filepath.cget("text")))
+img_search_button.pack(anchor="n", side="top", padx=10, pady=10)
 
 window.mainloop()
