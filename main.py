@@ -197,12 +197,10 @@ def update_coords(event):
 
     color_label.config(text=f"#{r:02X}{g:02X}{b:02X}")
 
-
 def clear_coords(_event=None):
     global coords_label, color_label
     coords_label.config(text="x: -  y: -")
     color_label.config(text="#------")
-
 
 draw_enabled = True
 is_drawing = False
@@ -264,7 +262,7 @@ def draw_at(ix, iy):
     render(image_tk)
 
 def start_draw(event):
-    global _is_drawing
+    global is_drawing
     if not draw_enabled:
         return
 
@@ -276,6 +274,7 @@ def start_draw(event):
     draw_at(p[0], p[1])
 
 def draw_move(event):
+    global is_drawing
     if not draw_enabled or not is_drawing:
         return
 
@@ -358,6 +357,8 @@ emboss_button.pack(anchor="n", side="top", padx=10, pady=5)
 negativ_button = tk.Button(left_bar, text="Invert", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
                           width=BTN_W, height=BTN_H, command=lambda: processing('negativ'))
 negativ_button.pack(anchor="n", side="top", padx=10, pady=5)
+spacer = tk.Frame(left_bar, height=20, bg="#286CA1") 
+spacer.pack(side="top", fill="x")
 
 #slideuri de prelucrare
 contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
@@ -368,6 +369,8 @@ contrast_slider.pack(anchor="n", side="top", padx=10, pady=0)
 contrast_button = tk.Button(left_bar, text="Aplica contrast", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
                             command=img_contrast)
 contrast_button.pack(anchor="n", side="top", padx=10, pady=0)
+spacer = tk.Frame(left_bar, height=10, bg="#286CA1") 
+spacer.pack(side="top", fill="x")
 
 brightness_slider = tk.Scale(left_bar, label="Brightness", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
                            foreground="white", font=button_font, bg="#1E4E78")
@@ -377,6 +380,8 @@ brightness_slider.pack(anchor="n", side="top", padx=10, pady=0)
 brightness_button = tk.Button(left_bar, text="Aplica brightness", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
                             command=img_brightness)
 brightness_button.pack(anchor="n", side="top", padx=10, pady=0)
+spacer = tk.Frame(left_bar, height=10, bg="#286CA1") 
+spacer.pack(side="top", fill="x")
 
 sharpness_slider = tk.Scale(left_bar, label="Sharpness", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
                            foreground="white", font=button_font, bg="#1E4E78")
@@ -408,13 +413,11 @@ palette_frame.pack_forget()
 palette_frame.pack(side="bottom", padx=10, pady=10)
 palette_title.pack(side="bottom", padx=10, pady=(0, 4))
 
-
 brush_title.pack_forget()
 brush_scale.pack_forget()
 
 brush_scale.pack(side="bottom", padx=10, pady=(0, 10))
 brush_title.pack(side="bottom", padx=10, pady=(10, 6))
-
 
 # lista culori
 palette_colors = [
