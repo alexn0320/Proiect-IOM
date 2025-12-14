@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageChops
 import numpy as np
-=======
 from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageOps
->>>>>>> master
 
 image = None
 
