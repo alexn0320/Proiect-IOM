@@ -1,4 +1,4 @@
-from PIL import Image, ImageTk, ImageEnhance, ImageFilter
+from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageOps
 
 image = None
 
@@ -25,3 +25,7 @@ def img_blur():
 def img_emboss():
     global image
     image = image.filter(ImageFilter.EMBOSS)
+
+def img_invert():
+    global image
+    image = ImageOps.invert(image)

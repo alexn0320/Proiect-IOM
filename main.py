@@ -1,9 +1,7 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import ImageTk, Image, ImageOps, ImageEnhance
 from tkinter import filedialog, messagebox, colorchooser
-from PIL import ImageTk, Image, ImageOps, ImageDraw
+from PIL import ImageTk, Image, ImageOps, ImageDraw, ImageEnhance
 import image_processing
 import tkinter.font as tkFont
 
@@ -88,22 +86,55 @@ def processing(type):
         image_processing.img_blur()
     if type == 'emboss':
         image_processing.img_emboss()
+    if type == 'negativ':
+        image_processing.img_invert()
 
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
-def img_contrast(contrast_var):
+def img_contrast():
     global image_tk
     
     if getattr(image_processing, 'image', None) is None:
         return
 
-    valoare = float(contrast_var)
+    valoare = contrast_slider.get()
+    valoare = float(valoare)
     
     enhancer = ImageEnhance.Contrast(image_processing.image)
-    image_en = enhancer.enhance(valoare)
+    image_processing.image = enhancer.enhance(valoare)
+    
+    image_tk = ImageTk.PhotoImage(image_processing.image)
+    render(image_tk)
 
-    image_tk = ImageTk.PhotoImage(image_en)
+def img_brightness():
+    global image_tk
+    
+    if getattr(image_processing, 'image', None) is None:
+        return
+
+    valoare = brightness_slider.get()
+    valoare = float(valoare)
+    
+    enhancer = ImageEnhance.Brightness(image_processing.image)
+    image_processing.image = enhancer.enhance(valoare)
+    
+    image_tk = ImageTk.PhotoImage(image_processing.image)
+    render(image_tk)
+
+def img_sharpness():
+    global image_tk
+    
+    if getattr(image_processing, 'image', None) is None:
+        return
+
+    valoare = sharpness_slider.get()
+    valoare = float(valoare)
+    
+    enhancer = ImageEnhance.Sharpness(image_processing.image)
+    image_processing.image = enhancer.enhance(valoare)
+    
+    image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
 def file_save():
@@ -324,11 +355,37 @@ emboss_button = tk.Button(left_bar, text="Emboss", foreground="white", font=butt
                           width=BTN_W, height=BTN_H, command=lambda: processing('emboss'))
 emboss_button.pack(anchor="n", side="top", padx=10, pady=5)
 
+negativ_button = tk.Button(left_bar, text="Invert", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                          width=BTN_W, height=BTN_H, command=lambda: processing('negativ'))
+negativ_button.pack(anchor="n", side="top", padx=10, pady=5)
+
 #slideuri de prelucrare
 contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
-                           foreground="white", font=button_font, bg="#1E4E78", command=img_contrast)
+                           foreground="white", font=button_font, bg="#1E4E78")
 contrast_slider.set(1)
-contrast_slider.pack(anchor="n", side="top", padx=10, pady=10)
+contrast_slider.pack(anchor="n", side="top", padx=10, pady=0)
+
+contrast_button = tk.Button(left_bar, text="Aplica contrast", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                            command=img_contrast)
+contrast_button.pack(anchor="n", side="top", padx=10, pady=0)
+
+brightness_slider = tk.Scale(left_bar, label="Brightness", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
+                           foreground="white", font=button_font, bg="#1E4E78")
+brightness_slider.set(1)
+brightness_slider.pack(anchor="n", side="top", padx=10, pady=0)
+
+brightness_button = tk.Button(left_bar, text="Aplica brightness", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                            command=img_brightness)
+brightness_button.pack(anchor="n", side="top", padx=10, pady=0)
+
+sharpness_slider = tk.Scale(left_bar, label="Sharpness", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
+                           foreground="white", font=button_font, bg="#1E4E78")
+sharpness_slider.set(1)
+sharpness_slider.pack(anchor="n", side="top", padx=10, pady=0)
+
+sharpness_button = tk.Button(left_bar, text="Aplica sharpness", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                            command=img_sharpness)
+sharpness_button.pack(anchor="n", side="top", padx=10, pady=0)
 
 #reglare dimensiune pensula
 brush_title = tk.Label(left_bar, text="Brush size", fg="white", bg="#286CA1", font=button_font)
