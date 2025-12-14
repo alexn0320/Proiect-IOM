@@ -14,6 +14,7 @@ color_label = None
 selected_palette_btn = None
 
 MAX_RENDER_SIZE = (600, 600)
+constrast_slider_value = 1.0
 
 def resize(image):
     w, h = image.size
@@ -83,6 +84,9 @@ def file_select():
 
 def processing(type):
     global image_tk
+
+    if image_processing.image == None:
+        return
     
     if type == 'greyscale':
         image_processing.img_greyscale()
@@ -90,6 +94,12 @@ def processing(type):
         image_processing.img_blur()
     if type == 'emboss':
         image_processing.img_emboss()
+    if type == 'contrast':
+        enhancer = ImageEnhance.Contrast(image_processing.image)
+        print(constrast_slider_value)
+        image_processing.image = enhancer.enhance(constrast_slider_value)
+
+        image_tk = ImageTk.PhotoImage(image_processing.image)
 
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
@@ -97,7 +107,8 @@ def processing(type):
 def image_search(org_image_path):
     path = filedialog.askdirectory()
 
-    print(org_image_path)
+    if image_processing.image == None:
+        return
 
     if len(path) == 0:
         return
@@ -119,14 +130,17 @@ def image_search(org_image_path):
             close_image = img
 
     if close_image != None:
-        os.system(close_image)
+        webbrowser.open(close_image)
+
 def img_contrast(contrast_var):
     global image_tk
+    global constrast_slider_value
     
     if getattr(image_processing, 'image', None) is None:
         return
 
     valoare = float(contrast_var)
+    constrast_slider_value = valoare
     
     enhancer = ImageEnhance.Contrast(image_processing.image)
     image_en = enhancer.enhance(valoare)
@@ -136,6 +150,9 @@ def img_contrast(contrast_var):
 
 def file_save():
     global filepath
+
+    if image_processing.image == None:
+        return
 
     ext_map = {
         ".png": ("PNG Image", "*.png"),
@@ -374,6 +391,10 @@ contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='ho
                            command=img_contrast)
 contrast_slider.set(1)
 contrast_slider.pack(anchor="n", side="top", padx=10, pady=10)
+
+contrast_button = tk.Button(left_bar, text="Aplicare contrast", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                          command=lambda: processing('contrast'))
+contrast_button.pack(anchor="n", side="top", padx=10, pady=10)
 
 #reglare dimensiune pensula
 brush_title = tk.Label(left_bar, text="Brush size", fg="white", bg="#286CA1", font=button_font)
