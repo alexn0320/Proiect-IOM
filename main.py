@@ -1,9 +1,7 @@
 import os
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import ImageTk, Image, ImageOps, ImageEnhance
 from tkinter import filedialog, messagebox, colorchooser
-from PIL import ImageTk, Image, ImageOps, ImageDraw
+from PIL import ImageTk, Image, ImageOps, ImageDraw, ImageEnhance
 import image_processing
 import tkinter.font as tkFont
 import sys
@@ -98,8 +96,9 @@ def processing(type):
         enhancer = ImageEnhance.Contrast(image_processing.image)
         print(constrast_slider_value)
         image_processing.image = enhancer.enhance(constrast_slider_value)
-
         image_tk = ImageTk.PhotoImage(image_processing.image)
+    if type == 'negativ':
+        image_processing.img_invert()
 
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
@@ -132,20 +131,50 @@ def image_search(org_image_path):
     if close_image != None:
         webbrowser.open(close_image)
 
-def img_contrast(contrast_var):
+def img_contrast():
     global image_tk
     global constrast_slider_value
     
     if getattr(image_processing, 'image', None) is None:
         return
 
-    valoare = float(contrast_var)
-    constrast_slider_value = valoare
+    valoare = contrast_slider.get()
+    valoare = float(valoare)
     
     enhancer = ImageEnhance.Contrast(image_processing.image)
-    image_en = enhancer.enhance(valoare)
+    image_processing.image = enhancer.enhance(valoare)
+    
+    image_tk = ImageTk.PhotoImage(image_processing.image)
+    render(image_tk)
 
-    image_tk = ImageTk.PhotoImage(image_en)
+def img_brightness():
+    global image_tk
+    
+    if getattr(image_processing, 'image', None) is None:
+        return
+
+    valoare = brightness_slider.get()
+    valoare = float(valoare)
+    
+    enhancer = ImageEnhance.Brightness(image_processing.image)
+    image_processing.image = enhancer.enhance(valoare)
+    
+    image_tk = ImageTk.PhotoImage(image_processing.image)
+    render(image_tk)
+
+def img_sharpness():
+    global image_tk
+    
+    if getattr(image_processing, 'image', None) is None:
+        return
+
+    valoare = sharpness_slider.get()
+    valoare = float(valoare)
+    
+    enhancer = ImageEnhance.Sharpness(image_processing.image)
+    image_processing.image = enhancer.enhance(valoare)
+    
+    image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
 def file_save():
@@ -219,7 +248,7 @@ def clear_coords(_event=None):
 
 
 draw_enabled = True
-_is_drawing = False
+is_drawing = False
 
 brush_size = 3  #grosime pensula
 
@@ -241,7 +270,7 @@ def set_brush(size):
     global brush_size
     brush_size = int(size)
 
-def _canvas_to_image_xy(cx, cy):
+def canvas_to_image_xy(cx, cy):
     # Converteste coordonatele de pe canvas in coordonate in imagine (tinand cont ca imaginea e centrata)
     if image_tk is None or image_processing.image is None:
         return None
@@ -261,7 +290,7 @@ def _canvas_to_image_xy(cx, cy):
 
     return (ix, iy)
 
-def _draw_at(ix, iy):
+def draw_at(ix, iy):
     global image_tk
 
     # asigura un mod "desenabil"
@@ -282,26 +311,26 @@ def start_draw(event):
     if not draw_enabled:
         return
 
-    p = _canvas_to_image_xy(event.x, event.y)
+    p = canvas_to_image_xy(event.x, event.y)
     if p is None:
         return
 
-    _is_drawing = True
-    _draw_at(p[0], p[1])
+    is_drawing = True
+    draw_at(p[0], p[1])
 
 def draw_move(event):
-    if not draw_enabled or not _is_drawing:
+    if not draw_enabled or not is_drawing:
         return
 
-    p = _canvas_to_image_xy(event.x, event.y)
+    p = canvas_to_image_xy(event.x, event.y)
     if p is None:
         return
 
-    _draw_at(p[0], p[1])
+    draw_at(p[0], p[1])
 
 def stop_draw(_event=None):
-    global _is_drawing
-    _is_drawing = False
+    global is_drawing
+    is_drawing = False
 
 window = tk.Tk()
 window.title("Editor de imagini")
@@ -311,16 +340,19 @@ image_tk = None
 ui_font = tkFont.Font(family="Verdana", size=12)
 button_font = tkFont.Font(family="Verdana", size=10)
 
+BTN_W = 10
+BTN_H = 1
+
 top_bar = tk.Frame(window, bg="#286CA1")
 top_bar.pack(anchor="nw", fill="x")
 
 select_button = tk.Button(top_bar, text="Selectare",foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                          command=file_select)
-select_button.pack(anchor="nw", side="left", pady=10)
+                           width=BTN_W, height=BTN_H, command=file_select)
+select_button.pack(anchor="nw", side="left", padx=12, pady=8)
 
 save_button = tk.Button(top_bar, text="Salvare", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                        command=file_save)
-save_button.pack(anchor="nw", side="left", pady=10)
+                         width=BTN_W, height=BTN_H, command=file_save)
+save_button.pack(anchor="nw", side="left", padx=15, pady=8)
 
 left_bar = tk.Frame(window, bg="#286CA1")
 left_bar.pack(side="left", fill="y")
@@ -339,27 +371,11 @@ img_data = tk.Label(image_area, text="", font=ui_font, bg="white")
 img_data.pack(side="top")
 
 #label coordonate pixel
-coords_label = tk.Label(
-    image_area,
-    text="x: -  y: -",
-    font=button_font,
-    padx=2, pady=1,
-    bg="white",
-    fg="black",
-    borderwidth=1
-)
+coords_label = tk.Label(image_area, text="x: -  y: -", font=button_font, padx=2, pady=1, bg="white", fg="black", borderwidth=1)
 coords_label.place(relx=1.0, rely=1.0, anchor="se", x=-4, y=-4)
 
 #label culoare pixel
-color_label = tk.Label(
-    image_area,
-    text="#------",
-    font=button_font,
-    padx=2, pady=1,
-    bg="white",
-    fg="black",
-    borderwidth=1
-)
+color_label = tk.Label(image_area, text="#------", font=button_font, padx=2, pady=1, bg="white", fg="black", borderwidth=1)
 color_label.place(relx=0.0, rely=1.0, anchor="sw", x=4, y=-4)
 
 canvas.bind("<Motion>", update_coords)
@@ -369,28 +385,52 @@ canvas.bind("<Button-1>", start_draw, add="+")
 canvas.bind("<B1-Motion>", draw_move, add="+")
 canvas.bind("<ButtonRelease-1>", stop_draw, add="+")
 
-
 #butoanele de prelucrare
 grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                        command=lambda: processing('greyscale'))
-grey_button.pack(anchor="n", side="top", padx=10, pady=10)
+                        width=BTN_W, height=BTN_H, command=lambda: processing('greyscale'))
+grey_button.pack(anchor="n", side="top", padx=10, pady=5)
 
 blur_button = tk.Button(left_bar, text="Blur", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                        command=lambda: processing('blur'))
-blur_button.pack(anchor="n", side="top", padx=10, pady=10)
+                        width=BTN_W, height=BTN_H, command=lambda: processing('blur'))
+blur_button.pack(anchor="n", side="top", padx=10, pady=5)
 
 emboss_button = tk.Button(left_bar, text="Emboss", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                          command=lambda: processing('emboss'))
-emboss_button.pack(anchor="n", side="top", padx=10, pady=10)
+                          width=BTN_W, height=BTN_H, command=lambda: processing('emboss'))
+emboss_button.pack(anchor="n", side="top", padx=10, pady=5)
+
+negativ_button = tk.Button(left_bar, text="Invert", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                          width=BTN_W, height=BTN_H, command=lambda: processing('negativ'))
+negativ_button.pack(anchor="n", side="top", padx=10, pady=5)
 
 img_search_button = tk.Button(left_bar, text="Image Search", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: image_search(filepath.cget("text")))
 img_search_button.pack(anchor="n", side="top", padx=10, pady=10)
 #slideuri de prelucrare
 contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
-                           foreground="white", font=button_font, bg="#1E4E78",
-                           command=img_contrast)
+                           foreground="white", font=button_font, bg="#1E4E78")
 contrast_slider.set(1)
-contrast_slider.pack(anchor="n", side="top", padx=10, pady=10)
+contrast_slider.pack(anchor="n", side="top", padx=10, pady=0)
+
+contrast_button = tk.Button(left_bar, text="Aplica contrast", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                            command=img_contrast)
+contrast_button.pack(anchor="n", side="top", padx=10, pady=0)
+
+brightness_slider = tk.Scale(left_bar, label="Brightness", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
+                           foreground="white", font=button_font, bg="#1E4E78")
+brightness_slider.set(1)
+brightness_slider.pack(anchor="n", side="top", padx=10, pady=0)
+
+brightness_button = tk.Button(left_bar, text="Aplica brightness", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                            command=img_brightness)
+brightness_button.pack(anchor="n", side="top", padx=10, pady=0)
+
+sharpness_slider = tk.Scale(left_bar, label="Sharpness", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
+                           foreground="white", font=button_font, bg="#1E4E78")
+sharpness_slider.set(1)
+sharpness_slider.pack(anchor="n", side="top", padx=10, pady=0)
+
+sharpness_button = tk.Button(left_bar, text="Aplica sharpness", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
+                            command=img_sharpness)
+sharpness_button.pack(anchor="n", side="top", padx=10, pady=0)
 
 contrast_button = tk.Button(left_bar, text="Aplicare contrast", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
                           command=lambda: processing('contrast'))
@@ -400,18 +440,8 @@ contrast_button.pack(anchor="n", side="top", padx=10, pady=10)
 brush_title = tk.Label(left_bar, text="Brush size", fg="white", bg="#286CA1", font=button_font)
 brush_title.pack(anchor="n", padx=10, pady=(20, 6))
 
-brush_scale = tk.Scale(
-    left_bar,
-    from_=1,
-    to=30,
-    orient="horizontal",
-    command=set_brush,        
-    bg="#286CA1",
-    fg="white",
-    troughcolor="#1E4E78",
-    highlightthickness=0
-)
-
+brush_scale = tk.Scale(left_bar, from_=1, to=30, orient="horizontal", command=set_brush, bg="#286CA1", fg="white",
+                       troughcolor="#1E4E78", highlightthickness=0)
 brush_scale.set(brush_size)   
 
 #paleta culori
@@ -457,15 +487,8 @@ for i, (name, rgb, hexcol) in enumerate(palette_colors):
     r = i // cols
     c = i % cols
 
-    b = tk.Button(
-        palette_frame,
-        bg=hexcol,
-        width=2,
-        height=1,
-        relief="raised",
-        bd=1,
-        highlightthickness=1
-    )
+    b = tk.Button(palette_frame, bg=hexcol, width=2, height=1, relief="raised", bd=1, highlightthickness=1)
+
     # selectare implicita (de ex. Red = index 2)
     btns = palette_frame.winfo_children()
     if len(btns) > 0:

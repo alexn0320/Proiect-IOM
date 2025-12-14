@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageChops
 import numpy as np
+=======
+from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageOps
+>>>>>>> master
 
 image = None
 
@@ -40,3 +44,6 @@ def img_search_similarity(img1, img2):
 
     return dist
 
+def img_invert():
+    global image
+    image = ImageOps.invert(image)
