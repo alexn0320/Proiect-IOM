@@ -61,6 +61,10 @@ def file_select():
         return
     
     image_processing.open_image(path)
+
+    if image_processing.image.mode == "RGBA":
+        image_processing.image = image_processing.image.convert("RGB")
+
     print(image_processing.image.size)
     status, aux = resize(image_processing.image)
 
@@ -78,6 +82,7 @@ def file_select():
     
     render(image_tk)
 
+    print(image_processing.image.mode)
     img_data.config(text=str(image_processing.image.size) + " - " + str(image_processing.image.mode))
 
 def processing(type):
@@ -214,6 +219,8 @@ def file_save():
     _, ext = os.path.splitext(filepath.cget("text"))
 
     path = filedialog.asksaveasfilename(filetypes=[ext_map[ext]])
+
+    path += ext
 
     if len(path) == 0:
         return
