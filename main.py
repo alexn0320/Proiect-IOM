@@ -104,6 +104,11 @@ def processing(type):
     render(image_tk)
 
 def image_search(org_image_path):
+    status = messagebox.askokcancel("Performanta cautare", "Algoritmul de cautare utilizeaza histograma. Performantele pot fi scazute.", type='okcancel')
+
+    if status == 0:
+        return
+
     path = filedialog.askdirectory()
 
     if image_processing.image == None:
@@ -111,10 +116,10 @@ def image_search(org_image_path):
 
     if len(path) == 0:
         return
-    
+
     images = []
     for f in os.listdir(path):
-        if f.lower().endswith((".png", ".jpg", ".jpeg")) and org_image_path != f:
+        if f.lower().endswith((".png", ".jpg", ".jpeg", ".bmp")) and org_image_path != f:
             images.append(os.path.join(path, f))
 
     close_image = None
@@ -129,7 +134,23 @@ def image_search(org_image_path):
             close_image = img
 
     if close_image != None:
-        webbrowser.open(close_image)
+        img = Image.open(close_image)
+        search_image_found(img, close_image)
+
+def search_image_found(img, path):
+    win = tk.Toplevel(window)
+    win.title("Found image")
+
+    img = ImageTk.PhotoImage(img)
+
+    img_name = tk.Label(win, text=os.path.basename(path))
+    img_name.pack()
+
+    img_label = tk.Label(win, image=img)
+    img_label.image = img
+    img_label.pack()
+
+    win.geometry(f"{img.width()}x{img.height()}")
 
 def img_contrast():
     global image_tk
@@ -340,18 +361,18 @@ image_tk = None
 ui_font = tkFont.Font(family="Verdana", size=12)
 button_font = tkFont.Font(family="Verdana", size=10)
 
-BTN_W = 10
+BTN_W = 15
 BTN_H = 1
 
 top_bar = tk.Frame(window, bg="#286CA1")
 top_bar.pack(anchor="nw", fill="x")
 
 select_button = tk.Button(top_bar, text="Selectare",foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                           width=BTN_W, height=BTN_H, command=file_select)
+                           command=file_select)
 select_button.pack(anchor="nw", side="left", padx=12, pady=8)
 
 save_button = tk.Button(top_bar, text="Salvare", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                         width=BTN_W, height=BTN_H, command=file_save)
+                         command=file_save)
 save_button.pack(anchor="nw", side="left", padx=15, pady=8)
 
 left_bar = tk.Frame(window, bg="#286CA1")
@@ -402,8 +423,8 @@ negativ_button = tk.Button(left_bar, text="Invert", foreground="white", font=but
                           width=BTN_W, height=BTN_H, command=lambda: processing('negativ'))
 negativ_button.pack(anchor="n", side="top", padx=10, pady=5)
 
-img_search_button = tk.Button(left_bar, text="Image Search", foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: image_search(filepath.cget("text")))
-img_search_button.pack(anchor="n", side="top", padx=10, pady=10)
+img_search_button = tk.Button(left_bar, text="Image Search", width=BTN_W, height=BTN_H, foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: image_search(filepath.cget("text")))
+img_search_button.pack(anchor="n", side="top", padx=10, pady=5)
 #slideuri de prelucrare
 contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
                            foreground="white", font=button_font, bg="#1E4E78")
@@ -432,10 +453,6 @@ sharpness_button = tk.Button(left_bar, text="Aplica sharpness", foreground="whit
                             command=img_sharpness)
 sharpness_button.pack(anchor="n", side="top", padx=10, pady=0)
 
-contrast_button = tk.Button(left_bar, text="Aplicare contrast", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                          command=lambda: processing('contrast'))
-contrast_button.pack(anchor="n", side="top", padx=10, pady=10)
-
 #reglare dimensiune pensula
 brush_title = tk.Label(left_bar, text="Brush size", fg="white", bg="#286CA1", font=button_font)
 brush_title.pack(anchor="n", padx=10, pady=(20, 6))
@@ -463,7 +480,6 @@ brush_scale.pack_forget()
 
 brush_scale.pack(side="bottom", padx=10, pady=(0, 10))
 brush_title.pack(side="bottom", padx=10, pady=(10, 6))
-
 
 # lista culori
 palette_colors = [
