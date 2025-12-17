@@ -28,31 +28,6 @@ def img_emboss():
     global image
     image = image.filter(ImageFilter.EMBOSS)
 
-def hsv_hist(img_pil, size=(128,128), h_bins=32, s_bins=32):
-    img = img_pil.convert("RGB").resize(size)
-    hsv = np.asarray(img.convert("HSV"), dtype=np.uint8)
-
-    H = hsv[:,:,0]
-    S = hsv[:,:,1]
-    V = hsv[:,:,2]
-
-    # Ignore dark background
-    mask = V > 40
-    if not np.any(mask):
-        return np.zeros((h_bins, s_bins), dtype=np.float32)
-
-    H = H[mask]
-    S = S[mask]
-
-    h_idx = (H * h_bins) // 255
-    s_idx = (S * s_bins) // 255
-
-    hist = np.zeros((h_bins, s_bins), dtype=np.float32)
-    np.add.at(hist, (h_idx, s_idx), 1)
-
-    hist /= hist.sum()
-    return hist
-
 def img_invert():
     global image
     image = ImageOps.invert(image)
