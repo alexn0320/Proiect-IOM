@@ -421,11 +421,13 @@ emboss_button.pack(anchor="n", side="top", padx=10, pady=5)
 negativ_button = tk.Button(left_bar, text="Invert", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
                           width=BTN_W, height=BTN_H, command=lambda: processing('negativ'))
 negativ_button.pack(anchor="n", side="top", padx=10, pady=5)
-spacer = tk.Frame(left_bar, height=20, bg="#286CA1") 
-spacer.pack(side="top", fill="x")
 
 img_search_button = tk.Button(left_bar, text="Image Search", width=BTN_W, height=BTN_H, foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: image_search(filepath.cget("text")))
 img_search_button.pack(anchor="n", side="top", padx=10, pady=5)
+
+spacer = tk.Frame(left_bar, height=20, bg="#286CA1") 
+spacer.pack(side="top", fill="x")
+
 #slideuri de prelucrare
 contrast_slider = tk.Scale(left_bar, label="Contrast", from_=0, to=2, orient='horizontal', length=200, resolution=0.1, 
                            foreground="white", font=button_font, bg="#1E4E78")
