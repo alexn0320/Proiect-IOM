@@ -1,3 +1,5 @@
+from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageChops
+import numpy as np
 from PIL import Image, ImageTk, ImageEnhance, ImageFilter, ImageOps
 
 image = None
@@ -14,6 +16,7 @@ def save_image(path):
     global image
     image.save(path)
 
+#functii pentru procesarea imaginii
 def img_greyscale():
     global image
     image = image.convert("L")
@@ -29,3 +32,25 @@ def img_emboss():
 def img_invert():
     global image
     image = ImageOps.invert(image)
+
+#realizeaza diferenta intre histograma celor 2 imagini. O diferenta mai mica => mai "apropiate"
+def img_search_similarity(img1, img2): 
+    size = (512, 512) 
+    aux_img1 = np.array(img1.convert("RGB").resize(size)) 
+    aux_img2 = np.array(img2.convert("RGB").resize(size)) 
+
+    rgb_hist1 = []
+    rgb_hist2 = []
+
+    for c in range(3):
+        h1, bin1 = np.histogram(aux_img1[:,:,c], bins=256, range=(0, 255), density=True) 
+        h2, bin2 = np.histogram(aux_img2[:,:,c], bins=256, range=(0, 255), density=True) 
+        rgb_hist1.append(h1)
+        rgb_hist2.append(h2)
+    
+    rgb_hist1 = np.concatenate(rgb_hist1)
+    rgb_hist2 = np.concatenate(rgb_hist2)
+
+    dist = np.linalg.norm(rgb_hist1 - rgb_hist2) 
+
+    return dist

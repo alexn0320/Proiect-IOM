@@ -4,13 +4,16 @@ from tkinter import filedialog, messagebox, colorchooser
 from PIL import ImageTk, Image, ImageOps, ImageDraw, ImageEnhance
 import image_processing
 import tkinter.font as tkFont
+import sys
 
 coord_label = None
 color_label = None
 selected_palette_btn = None
 
 MAX_RENDER_SIZE = (600, 600)
+constrast_slider_value = 1.0 
 
+#functie redimensionare imagine
 def resize(image):
     w, h = image.size
     resized_image = image
@@ -18,10 +21,12 @@ def resize(image):
     status = 1
 
     try:
+        #redimensionare inaltime daca depaseste maximul
         if h > MAX_RENDER_SIZE[1]:
             ratio = h / MAX_RENDER_SIZE[1]
             resized_image = image.resize((int(w/ratio), MAX_RENDER_SIZE[1]))
-
+            
+        #redimensionare latime daca depaseste maximul
         if w > MAX_RENDER_SIZE[0]:
             ratio = w / MAX_RENDER_SIZE[0]
             resized_image = image.resize((MAX_RENDER_SIZE[0], int(h/ratio)))
@@ -33,6 +38,7 @@ def resize(image):
 
     return (status, resized_image)
 
+#functie afisare imagine
 def render(image_tk):
     global canvas
     
@@ -40,6 +46,7 @@ def render(image_tk):
     canvas.create_rectangle(2, 2, MAX_RENDER_SIZE[0], MAX_RENDER_SIZE[1], outline="black")
     canvas.create_image(MAX_RENDER_SIZE[0] // 2, MAX_RENDER_SIZE[1] // 2, image=image_tk, anchor="center")
 
+#functie selectare fisier
 def file_select():
     global filepath
     global img_data
@@ -51,15 +58,20 @@ def file_select():
         return
 
     path = os.path.basename(path)
-
+    
+    #verificare extensia fisierului
     if path[len(path) - 3::] != "bmp" and path[len(path) - 3::] != "jpg" and path[len(path) - 3::] != "png":
         path = "Nu se poate deschide fisierul: " + path
         filepath.config(text=path)
         return
     
     image_processing.open_image(path)
+
+    if image_processing.image.mode == "RGBA":
+        image_processing.image = image_processing.image.convert("RGB")
+
     print(image_processing.image.size)
-    status, aux = resize(image_processing.image)
+    status, aux = resize(image_processing.image)    #redimensionare imagine
 
     if aux is None:
         img_data.config(text="Nu se poate rescala imagea.")
@@ -67,18 +79,22 @@ def file_select():
     elif status == 0:
         return
     elif status == 1:
-        image_processing.image = aux
+        image_processing.image = aux    #actualizare imagine
 
-    image_tk = ImageTk.PhotoImage(image_processing.image)
+    image_tk = ImageTk.PhotoImage(image_processing.image)   
 
     filepath.config(text=path)
     
-    render(image_tk)
+    render(image_tk)    #randare imagine
 
     img_data.config(text=str(image_processing.image.size) + " - " + str(image_processing.image.mode))
 
+#functie de procesare
 def processing(type):
     global image_tk
+
+    if image_processing.image == None:
+        return
     
     if type == 'greyscale':
         image_processing.img_greyscale()
@@ -86,59 +102,135 @@ def processing(type):
         image_processing.img_blur()
     if type == 'emboss':
         image_processing.img_emboss()
+    if type == 'contrast':
+        enhancer = ImageEnhance.Contrast(image_processing.image)
+        print(constrast_slider_value)
+        image_processing.image = enhancer.enhance(constrast_slider_value)
+        image_tk = ImageTk.PhotoImage(image_processing.image)
     if type == 'negativ':
         image_processing.img_invert()
 
-    image_tk = ImageTk.PhotoImage(image_processing.image)
+    image_tk = ImageTk.PhotoImage(image_processing.image)   
     render(image_tk)
 
-def img_contrast():
-    global image_tk
-    
-    if getattr(image_processing, 'image', None) is None:
+#cautare imagine similara (folosind histograma)
+def image_search(org_image_path):
+    status = messagebox.askokcancel("Performanta cautare", "Algoritmul de cautare utilizeaza histograma. Performantele pot fi scazute.", type='okcancel')
+
+    if status == 0:
         return
 
-    valoare = contrast_slider.get()
+    path = filedialog.askdirectory()
+
+    if image_processing.image == None:
+        return
+
+    if len(path) == 0:
+        return
+
+    images = []
+    for f in os.listdir(path):  #parcurgere fisiere dintr-un folder
+        if f.lower().endswith((".png", ".jpg", ".jpeg", ".bmp")) and org_image_path != f:
+            images.append(os.path.join(path, f))
+
+    close_image = None
+    min = sys.maxsize   #calculare diferenta
+
+    for img in images:  #parcurgere imagini
+        aux_image = Image.open(img)
+        dif = image_processing.img_search_similarity(image_processing.image.copy(), aux_image.copy())
+
+        #daca se gaseste un nou minim se retine calea imaginii
+        if min > dif:   
+            min = dif
+            close_image = img
+
+    #se afiseaza imaginea cea mai apropiata de cea selectata
+    if close_image != None:
+        img = Image.open(close_image)
+        search_image_found(img, close_image)
+
+#functie afisare imaginea gasita intr-o fereastra noua
+def search_image_found(img, path):
+    win = tk.Toplevel(window)
+    win.title("Found image")
+
+    img = ImageTk.PhotoImage(img)
+
+    img_name = tk.Label(win, text=os.path.basename(path))
+    img_name.pack()
+
+    img_label = tk.Label(win, image=img)
+    img_label.image = img
+    img_label.pack()
+
+    win.geometry(f"{img.width()}x{img.height()}")
+
+
+#functie pentru slider contrast
+def img_contrast():
+    global image_tk
+    global constrast_slider_value
+    
+    if getattr(image_processing, 'image', None) is None: 
+        return
+
+    #ia valoarea slider-ului din aplicatie si il converteste in float 
+    valoare = contrast_slider.get() 
     valoare = float(valoare)
     
+    #aplica contrastul 
     enhancer = ImageEnhance.Contrast(image_processing.image)
     image_processing.image = enhancer.enhance(valoare)
     
+    #randare imagine
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
+#functie pentru slider luminozitate
 def img_brightness():
     global image_tk
     
     if getattr(image_processing, 'image', None) is None:
         return
 
+    #ia valoarea slider-ului din aplicatie si il converteste in float 
     valoare = brightness_slider.get()
     valoare = float(valoare)
     
+    #aplica luminozitatea 
     enhancer = ImageEnhance.Brightness(image_processing.image)
     image_processing.image = enhancer.enhance(valoare)
     
+    #randare imagine
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
+#functie pentru slider sharpness
 def img_sharpness():
     global image_tk
     
     if getattr(image_processing, 'image', None) is None:
         return
 
+    #ia valoarea slider-ului din aplicatie si il converteste in float 
     valoare = sharpness_slider.get()
     valoare = float(valoare)
     
+    #aplica sharpness 
     enhancer = ImageEnhance.Sharpness(image_processing.image)
     image_processing.image = enhancer.enhance(valoare)
     
+    #randare imagine
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
+#functie de salvare imagine
 def file_save():
     global filepath
+
+    if image_processing.image == None:
+        return
 
     ext_map = {
         ".png": ("PNG Image", "*.png"),
@@ -153,14 +245,15 @@ def file_save():
 
     if len(path) == 0:
         return
+    
+    path += ext
 
     image_processing.save_image(path)
 
-
+#functie de actualizare coordonate si afisarea culorii pixelului pe care se afla cursorul
 def update_coords(event):
     global coords_label,  color_label, image_tk
 
-    # daca nu exista inca imagine
     if image_tk is None or image_processing.image is None:
         coords_label.config(text="x: -  y: -")
         color_label.config(text="#------")
@@ -168,21 +261,22 @@ def update_coords(event):
 
     img_w, img_h = image_processing.image.size
 
-    # imaginea este desenata centrat, in render()
+    #imaginea este desenata centrat, in render()
     canvas_w = MAX_RENDER_SIZE[0] + 2
     canvas_h = MAX_RENDER_SIZE[1] + 2
 
+    #offset pentru centrare
     offset_x = (canvas_w - img_w) // 2
     offset_y = (canvas_h - img_h) // 2
 
-    # coordonate mouse in canvas
+    #coordonate mouse pe canvas
     cx, cy = event.x, event.y
 
-    # coordonate in imagine
+    #coordonate in imagine
     ix = cx - offset_x
     iy = cy - offset_y
 
-    # daca mouse-ul e in afara imaginii
+    #daca mouse-ul e in afara imaginii
     if ix < 0 or iy < 0 or ix >= img_w or iy >= img_h:
         coords_label.config(text="x: -  y: -")
         return
@@ -190,43 +284,50 @@ def update_coords(event):
     coords_label.config(text=f"x: {ix}  y: {iy}")
     px = image_processing.image.getpixel((ix, iy))
 
+    #stocare valoarea culorii pixelului
     if isinstance(px, int):
-        r = g = b = px
+        r = g = b = px  #
     else:
         r, g, b = px[0], px[1], px[2]
 
-    color_label.config(text=f"#{r:02X}{g:02X}{b:02X}")
+    color_label.config(text=f"#{r:02X}{g:02X}{b:02X}")  #afisare in hexa
 
+#functie de clear label-rui cand cursorul nu mai este pe imagine
 def clear_coords(_event=None):
     global coords_label, color_label
     coords_label.config(text="x: -  y: -")
     color_label.config(text="#------")
-
+    
+    
+#parte de paint (desenare pe imagine)
 draw_enabled = True
 is_drawing = False
 
 brush_size = 3  #grosime pensula
 
+#setter pentru culoarea care va fi aplicata
 def set_draw_color(rgb_tuple):
     global draw_color
     draw_color = rgb_tuple
 
+#functie de selectare a culorii din grid
 def select_palette_color(btn, rgb_tuple):
     global selected_palette_btn
     set_draw_color(rgb_tuple)
 
-    # evidentiere buton selectat
+    #evidentiere buton selectat
     if selected_palette_btn is not None:
         selected_palette_btn.config(relief="raised", bd=1)
     btn.config(relief="sunken", bd=2)
     selected_palette_btn = btn
 
+#setter pentru grosimea pensulei
 def set_brush(size):
     global brush_size
     brush_size = int(size)
 
+#functie de converise a coordonatelor de pe canvas in coordonate in imagine
 def canvas_to_image_xy(cx, cy):
-    # Converteste coordonatele de pe canvas in coordonate in imagine (tinand cont ca imaginea e centrata)
     if image_tk is None or image_processing.image is None:
         return None
 
@@ -234,60 +335,67 @@ def canvas_to_image_xy(cx, cy):
     canvas_w = MAX_RENDER_SIZE[0] + 2
     canvas_h = MAX_RENDER_SIZE[1] + 2
 
+    #offset pentru centrare
     offset_x = (canvas_w - img_w) // 2
     offset_y = (canvas_h - img_h) // 2
 
+    #coordonate pe imagine
     ix = cx - offset_x
     iy = cy - offset_y
 
-    if ix < 0 or iy < 0 or ix >= img_w or iy >= img_h:
-        return None
+    if ix < 0 or iy < 0 or ix >= img_w or iy >= img_h:  
+        return None     #cand cursorul e in afata imaginii
 
     return (ix, iy)
 
+#functie care deseneaza la coordonatele cursorului
 def draw_at(ix, iy):
     global image_tk
 
-    # asigura un mod "desenabil"
+    #asigura ca se poate desena pe imagine
     if image_processing.image.mode not in ("RGB", "RGBA"):
         image_processing.image = image_processing.image.convert("RGB")
 
     draw = ImageDraw.Draw(image_processing.image)
 
     r = brush_size
-    draw.ellipse((ix - r, iy - r, ix + r, iy + r), fill=draw_color, outline=draw_color)
+    draw.ellipse((ix - r, iy - r, ix + r, iy + r), fill=draw_color, outline=draw_color)     #deseneaza cer plin
 
-    # rerandare
+    #randare imagine
     image_tk = ImageTk.PhotoImage(image_processing.image)
     render(image_tk)
 
+#functie de desenare (primul punct)
 def start_draw(event):
-    global is_drawing
+    global is_drawing   #flag pentru click
     if not draw_enabled:
         return
 
-    p = canvas_to_image_xy(event.x, event.y)
+    p = canvas_to_image_xy(event.x, event.y)    #converise coordonate cursor la imagine
     if p is None:
         return
 
     is_drawing = True
-    draw_at(p[0], p[1])
+    draw_at(p[0], p[1])     #deseneaza punctul
 
+#functie de desenare cu click apasat
 def draw_move(event):
-    global is_drawing
+    global is_drawing   #flag pentru click
     if not draw_enabled or not is_drawing:
         return
 
-    p = canvas_to_image_xy(event.x, event.y)
+    p = canvas_to_image_xy(event.x, event.y)     #converise coordonate cursor la imagine
     if p is None:
         return
 
-    draw_at(p[0], p[1])
+    draw_at(p[0], p[1])     #deseneaza punctul
 
-def stop_draw(_event=None):
+def stop_draw(event=None):
     global is_drawing
     is_drawing = False
 
+
+#fereastra principala
 window = tk.Tk()
 window.title("Editor de imagini")
 window.resizable(False, False)
@@ -296,18 +404,20 @@ image_tk = None
 ui_font = tkFont.Font(family="Verdana", size=12)
 button_font = tkFont.Font(family="Verdana", size=10)
 
-BTN_W = 10
+BTN_W = 15
 BTN_H = 1
 
 top_bar = tk.Frame(window, bg="#286CA1")
 top_bar.pack(anchor="nw", fill="x")
 
+#buton select
 select_button = tk.Button(top_bar, text="Selectare",foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                           width=BTN_W, height=BTN_H, command=file_select)
+                           command=file_select)
 select_button.pack(anchor="nw", side="left", padx=12, pady=8)
 
+#buton save
 save_button = tk.Button(top_bar, text="Salvare", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
-                         width=BTN_W, height=BTN_H, command=file_save)
+                         command=file_save)
 save_button.pack(anchor="nw", side="left", padx=15, pady=8)
 
 left_bar = tk.Frame(window, bg="#286CA1")
@@ -334,12 +444,12 @@ coords_label.place(relx=1.0, rely=1.0, anchor="se", x=-4, y=-4)
 color_label = tk.Label(image_area, text="#------", font=button_font, padx=2, pady=1, bg="white", fg="black", borderwidth=1)
 color_label.place(relx=0.0, rely=1.0, anchor="sw", x=4, y=-4)
 
-canvas.bind("<Motion>", update_coords)
-canvas.bind("<Leave>", clear_coords)
+canvas.bind("<Motion>", update_coords)  #actualizare coordonate la miscarea mouse-ului
+canvas.bind("<Leave>", clear_coords)    
 
-canvas.bind("<Button-1>", start_draw, add="+")
-canvas.bind("<B1-Motion>", draw_move, add="+")
-canvas.bind("<ButtonRelease-1>", stop_draw, add="+")
+canvas.bind("<Button-1>", start_draw, add="+")  #click stanga - incepe sa deseneza
+canvas.bind("<B1-Motion>", draw_move, add="+")  #miscare cu click apasat - deseneaza continuu
+canvas.bind("<ButtonRelease-1>", stop_draw, add="+")    #fara click - se opreste desenatul
 
 #butoanele de prelucrare
 grey_button = tk.Button(left_bar, text="Greyscale", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
@@ -357,6 +467,10 @@ emboss_button.pack(anchor="n", side="top", padx=10, pady=5)
 negativ_button = tk.Button(left_bar, text="Invert", foreground="white", font=button_font, bg="#1E4E78", highlightthickness=0, 
                           width=BTN_W, height=BTN_H, command=lambda: processing('negativ'))
 negativ_button.pack(anchor="n", side="top", padx=10, pady=5)
+
+img_search_button = tk.Button(left_bar, text="Image Search", width=BTN_W, height=BTN_H, foreground="white", font=button_font, background="#1E4E78", highlightthickness=0, command=lambda: image_search(filepath.cget("text")))
+img_search_button.pack(anchor="n", side="top", padx=10, pady=5)
+
 spacer = tk.Frame(left_bar, height=20, bg="#286CA1") 
 spacer.pack(side="top", fill="x")
 
@@ -419,7 +533,7 @@ brush_scale.pack_forget()
 brush_scale.pack(side="bottom", padx=10, pady=(0, 10))
 brush_title.pack(side="bottom", padx=10, pady=(10, 6))
 
-# lista culori
+#lista culori
 palette_colors = [
     ("Black",  (0, 0, 0),       "#000000"),
     ("White",  (255, 255, 255), "#FFFFFF"),
@@ -435,7 +549,7 @@ palette_colors = [
     ("Gray",   (128, 128, 128), "#808080"),
 ]
 
-# creeaza butoane patrate in grid
+#creeaza butoane patrate in grid
 cols = 6
 for i, (name, rgb, hexcol) in enumerate(palette_colors):
     r = i // cols
@@ -443,7 +557,7 @@ for i, (name, rgb, hexcol) in enumerate(palette_colors):
 
     b = tk.Button(palette_frame, bg=hexcol, width=2, height=1, relief="raised", bd=1, highlightthickness=1)
 
-    # selectare implicita (de ex. Red = index 2)
+    #selectare implicita (negru)
     btns = palette_frame.winfo_children()
     if len(btns) > 0:
         select_palette_color(btns[0], palette_colors[0][1])
